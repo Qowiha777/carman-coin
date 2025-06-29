@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carman Coin Mining with Google Login</title>
+</head>
+
+<body style="font-family: Arial; text-align: center; background: linear-gradient(to right, #0f2027, #f66455, #208883); color: white; padding: 50px;">
+
+    <h1>Carman Coin Mining</h1>
+
+    <!-- Login Section -->
+    <div id="loginSection">
+        <p>Please login to continue mining.</p>
+        <button onclick="loginGoogle()" style="padding: 10px 20px; cursor: pointer;">Login with Google</button>
+    </div>
+
+    <!-- Mining Section -->
+    <div id="miningSection" style="display: none;">
+        <p id="welcome"></p>
+        <h2>Your Balance: <span id="balance">0.00000</span> Carman Coins</h2>
+
+        <div style="background-color: white; width: 80%; margin: auto; border-radius: 20px; overflow: hidden;">
+            <div id="progress" style="height: 20px; width: 0; background-color: #00ffff;"></div>
+        </div>
+
+        <p>Current Mining Speed: <span id="miningRate">0.01679</span> / second</p>
+
+        <button onclick="startMining()">Start Mining</button>
+        <button onclick="stopMining()">Stop Mining</button>
+        <button onclick="inviteFriend()">Invite Friend (+2% Speed)</button>
+        <button onclick="upgradeSpeed()">Upgrade Speed (-10 Coins)</button>
+        <button onclick="claimDailyBonus()">Claim Daily Bonus (+5 Coins)</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Firebase Config -->
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyC_bcvU5uLbewBSJULtUJqCiPm7VqSsPYc",
+            authDomain: "carman-coin.firebaseapp.com",
+            projectId: "carman-coin",
+            storageBucket: "carman-coin.appspot.com",
+            messagingSenderId: "359215957532",
+            appId: "1:359215957532:web:2a0efc5054c2bd310dc1d9",
+            measurementId: "G-BC89RHXXSM",
+            databaseURL: "https://carman-coin-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let balance = 0;
+        let miningRate = 0.01679;
+        let miningInterval;
+        let progressInterval;
+        let progress = 0;
+        let lastClaimDate = "";
+
+        let currentUserId = "";
+
+        // Cek jika user sudah login setelah redirect
+        auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                currentUserId = result.user.uid;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('miningSection').style.display = 'block';
+                document.getElementById('welcome').innerText = "Welcome, " + result.user.displayName;
+                loadBalance(); // Load saldo user
+            }
+        }).catch((error) => {
+            console.error("Login Error: ", error.message);
+        });
+
+        function loginGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithRedirect(provider);
+        }
+
+        function loadBalance() {
+            db.ref('users/' + currentUserId + '/balance').once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    balance = snapshot.val();
+                    document.getElementById('balance').innerText = balance.toFixed(5);
+                }
+            });
+        }
+
+        function saveBalance() {
+            db.ref('users/' + currentUserId).set({
+                balance: balance
+            });
+        }
+
+        function startMining() {
+            if (!miningInterval) {
+                miningInterval = setInterval(() => {
+                    balance += miningRate;
+                    document.getElementById('balance').innerText = balance.toFixed(5);
+                    saveBalance();
+                }, 1000);
+                startProgressBar();
+            }
+        }
+
+        function stopMining() {
+            clearInterval(miningInterval);
+            clearInterval(progressInterval);
+            miningInterval = null;
+            progressInterval = null;
+        }
+
+        function startProgressBar() {
+            const progressBar = document.getElementById('progress');
+            progressInterval = setInterval(() => {
+                progress = (progress + 10) % 100;
+                progressBar.style.width = progress + '%';
+            }, 1000);
+        }
+
+        function inviteFriend() {
+            miningRate += miningRate * 0.02;
+            document.getElementById('miningRate').innerText = miningRate.toFixed(5);
+            alert('Your mining speed increased by 2%!');
+        }
+
+        function upgradeSpeed() {
+            if (balance >= 10) {
+                balance -= 10;
+                miningRate += 0.005;
+                document.getElementById('balance').innerText = balance.toFixed(5);
+                document.getElementById('miningRate').innerText = miningRate.toFixed(5);
+                saveBalance();
+                alert('Mining speed upgraded!');
+            } else {
+                alert('Not enough balance to upgrade.');
+            }
+        }
+
+        function claimDailyBonus() {
+            const today = new Date().toLocaleDateString();
+            if (today !== lastClaimDate) {
+                balance += 5;
+                lastClaimDate = today;
+                document.getElementById('balance').innerText = balance.toFixed(5);
+                saveBalance();
+                alert('Daily bonus claimed! +5 Carman Coins');
+            } else {
+                alert('You have already claimed today\'s bonus.');
+            }
+        }
+    </script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Firebase Config dan Semua Script Langsung Di Sini -->
+<script>
+// Firebase Config
+var firebaseConfig = {
+    apiKey: "AIzaSyC_bcvU5uLbewBSJULtUJqCiPm7VqSsPYc",
+    authDomain: "carman-coin.firebaseapp.com",
+    projectId: "carman-coin",
+    storageBucket: "carman-coin.appspot.com",
+    messagingSenderId: "359215957532",
+    appId: "1:359215957532:web:2a0efc5054c2bd310dc1d9",
+    measurementId: "G-BC89RHXXSM",
+    databaseURL: "https://carman-coin-default-rtdb.firebaseio.com/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let balance = 0;
+let miningRate = 0.01679;
+let miningInterval;
+let progressInterval;
+let progress = 0;
+let lastClaimDate = "";
+let currentUserId = "";
+
+// Cek hasil login setelah redirect
+auth.getRedirectResult().then((result) => {
+    if (result.user) {
+        currentUserId = result.user.uid;
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('miningSection').style.display = 'block';
+        document.getElementById('welcome').innerText = "Welcome, " + result.user.displayName;
+        loadBalance();
+    }
+}).catch((error) => {
+    console.error("Login Error: ", error.message);
+});
+
+// Cek status login realtime
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUserId = user.uid;
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('miningSection').style.display = 'block';
+        document.getElementById('welcome').innerText = "Welcome, " + user.displayName;
+        loadBalance();
+    }
+});
+
+function loginGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithRedirect(provider);
+}
+
+function loadBalance() {
+    db.ref('users/' + currentUserId + '/balance').once('value').then((snapshot) => {
+        if (snapshot.exists()) {
+            balance = snapshot.val();
+            document.getElementById('balance').innerText = balance.toFixed(5);
+        }
+    });
+}
+
+function saveBalance() {
+    db.ref('users/' + currentUserId).set({
+        balance: balance
+    });
+}
+
+function startMining() {
+    if (!miningInterval) {
+        miningInterval = setInterval(() => {
+            balance += miningRate;
+            document.getElementById('balance').innerText = balance.toFixed(5);
+            saveBalance();
+        }, 1000);
+        startProgressBar();
+    }
+}
+
+function stopMining() {
+    clearInterval(miningInterval);
+    clearInterval(progressInterval);
+    miningInterval = null;
+    progressInterval = null;
+}
+
+function startProgressBar() {
+    const progressBar = document.getElementById('progress');
+    progressInterval = setInterval(() => {
+        progress = (progress + 10) % 100;
+        progressBar.style.width = progress + '%';
+    }, 1000);
+}
+
+function inviteFriend() {
+    miningRate += miningRate * 0.02;
+    document.getElementById('miningRate').innerText = miningRate.toFixed(5);
+    alert('Your mining speed increased by 2%!');
+}
+
+function upgradeSpeed() {
+    if (balance >= 10) {
+        balance -= 10;
+        miningRate += 0.005;
+        document.getElementById('balance').innerText = balance.toFixed(5);
+        document.getElementById('miningRate').innerText = miningRate.toFixed(5);
+        saveBalance();
+        alert('Mining speed upgraded!');
+    } else {
+        alert('Not enough balance to upgrade.');
+    }
+}
+
+function claimDailyBonus() {
+    const today = new Date().toLocaleDateString();
+    if (today !== lastClaimDate) {
+        balance += 5;
+        lastClaimDate = today;
+        document.getElementById('balance').innerText = balance.toFixed(5);
+        saveBalance();
+        alert('Daily bonus claimed! +5 Carman Coins');
+    } else {
+        alert('You have already claimed today\'s bonus.');
+    }
+}
+</script>
+</body>
+</html>
+</body>
+
+</html>
